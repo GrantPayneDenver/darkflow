@@ -10,7 +10,7 @@ from ...utils.box import BoundBox
 
 global frame
 frame = 0
-
+#this is a sample
 from ...cython_utils.cy_yolo2_findboxes import box_constructor
 
 def expit(x):
