@@ -7,6 +7,10 @@ import json
 #from utils.box import BoundBox, box_iou, prob_compare
 #from utils.box import prob_compare2, box_intersection
 from ...utils.box import BoundBox
+
+global frame
+frame = 0
+
 from ...cython_utils.cy_yolo2_findboxes import box_constructor
 
 def expit(x):
@@ -28,6 +32,9 @@ def postprocess(self, net_out, im, save = True):
 	"""
 	Takes net output, draw net_out, save to disk
 	"""
+	global frame
+	frame += 1
+	print('frame: ', frame)
 	boxes = self.findboxes(net_out)
 
 	# meta
@@ -39,8 +46,13 @@ def postprocess(self, net_out, im, save = True):
 		imgcv = cv2.imread(im)
 	else: imgcv = im
 	h, w, _ = imgcv.shape
-	
+	img_num = 0
 	resultsForJSON = []
+
+	# for saving largest bounding box of girl
+	max_box = None
+	max_area = 0
+
 	for b in boxes:
 		boxResults = self.process_box(b, h, w, threshold)
 		if boxResults is None:
@@ -57,7 +69,26 @@ def postprocess(self, net_out, im, save = True):
 		cv2.putText(imgcv, mess, (left, top - 12),
 			0, 1e-3 * h, colors[max_indx],thick//3)
 
+		img_num += 1
+
+		y = top
+		x = left
+		x2 = right
+		y2 = bot
+		roi = im[y:y2, x:x2]
+
+		area = roi.shape[0] * roi.shape[1]
+		if area > max_area:
+			max_box = roi
+			max_area = area
+
+
+
+	cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\bounding_boxes\\box_%d.jpg" % frame), max_box)
+		# roi = im[0:h, 0:w]
+		# cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\Screen_%d.jpg" % img_num), roi)
 	if not save: return imgcv
+
 
 	outfolder = os.path.join(self.FLAGS.imgdir, 'out')
 	img_name = os.path.join(outfolder, os.path.basename(im))
