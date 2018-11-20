@@ -10,7 +10,16 @@ from ...utils.box import BoundBox
 
 global frame
 frame = 0
-#this is a sample
+
+global out_dir
+good_path = False
+while not good_path:
+	out_dir = input("Please enter a directory to store your output for bounding boxes")
+	if os.path.isdir(out_dir):
+		good_path = True
+	else:
+		print("Invalid path")
+
 from ...cython_utils.cy_yolo2_findboxes import box_constructor
 
 def expit(x):
@@ -82,9 +91,9 @@ def postprocess(self, net_out, im, save = True):
 			max_box = roi
 			max_area = area
 
-
-
-	cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\bounding_boxes\\box_%d.jpg" % frame), max_box)
+	global out_dir
+	cv2.imwrite((out_dir+"\\box_%d.jpg" % frame), max_box)
+	# cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\bounding_boxes\\box_%d.jpg" % frame), max_box)
 		# roi = im[0:h, 0:w]
 		# cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\Screen_%d.jpg" % img_num), roi)
 	if not save: return imgcv
