@@ -3,6 +3,7 @@ import math
 import cv2
 import os
 import json
+import copy
 #from scipy.special import expit
 #from utils.box import BoundBox, box_iou, prob_compare
 #from utils.box import prob_compare2, box_intersection
@@ -59,10 +60,13 @@ def postprocess(self, net_out, im, save = True):
 	resultsForJSON = []
 
 	# for saving largest bounding box of girl
-	max_box = None
 	max_area = 0
+	max_image = None         # track image that contains largest bounding box
+	lesser_images_for_frame = []     # hold processed bounding box images for each frame
 
-	for b in boxes:
+	# copy of image for bounding box isolation
+
+	for i, b in enumerate(boxes):
 		boxResults = self.process_box(b, h, w, threshold)
 		if boxResults is None:
 			continue
@@ -78,6 +82,12 @@ def postprocess(self, net_out, im, save = True):
 		cv2.putText(imgcv, mess, (left, top - 12),
 			0, 1e-3 * h, colors[max_indx],thick//3)
 
+		# get copy of image for each box made
+		imgcv_copy = copy.copy(imgcv)
+		# process it as blackened
+		imgcv_copy = blacken_image(imgcv_copy, h, w, left, top, right, bot)
+		imgcv_copy = resize_image(imgcv_copy)
+
 		img_num += 1
 
 		y = top
@@ -88,16 +98,26 @@ def postprocess(self, net_out, im, save = True):
 
 		area = roi.shape[0] * roi.shape[1]
 		if area > max_area:
-			max_box = roi
+			max_image = imgcv_copy
 			max_area = area
 
+		# hold all imgcv_copy objects
+		lesser_images_for_frame.append(imgcv_copy)
+
+	# save all of these images
 	global out_dir
-	cv2.imwrite((out_dir+"\\box_%d.jpg" % frame), max_box)
+	# save largest first
+	cv2.imwrite((out_dir + "\\%d%dz.jpg" % (frame, 1)), max_image)
+	# save others after in sequence
+	for idx, img in enumerate(lesser_images_for_frame):
+		if img is not max_image:
+			cv2.imwrite((out_dir + "\\%d%d.jpg" % (frame, idx+2)), img)
+
+
 	# cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\bounding_boxes\\box_%d.jpg" % frame), max_box)
 		# roi = im[0:h, 0:w]
 		# cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\Screen_%d.jpg" % img_num), roi)
 	if not save: return imgcv
-
 
 	outfolder = os.path.join(self.FLAGS.imgdir, 'out')
 	img_name = os.path.join(outfolder, os.path.basename(im))
@@ -109,3 +129,20 @@ def postprocess(self, net_out, im, save = True):
 		return
 
 	cv2.imwrite(img_name, imgcv)
+
+
+def blacken_image(image, h, w, left, top, right, bot):
+	"""blackens the image surrounding the rectangle of the bounding box"""
+	black = (0, 0, 0)
+	fill  = -1
+	cv2.rectangle(image, (0, 0), (w, top), black, fill)
+	cv2.rectangle(image, (0, top), (left, h), black, fill)
+	cv2.rectangle(image, (left, bot), (w, h), black, fill)
+	cv2.rectangle(image, (right, top), (w, bot), black, fill)
+	return image
+
+def resize_image(image):
+	""" Resizes the image to 250 x 250 for the CNN """
+	size = 250
+	image = cv2.resize(image, (size, size), 1, 1, interpolation=cv2.INTER_AREA)
+	return image

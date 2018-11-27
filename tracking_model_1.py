@@ -205,34 +205,59 @@ print(ytest[8])
 # In[ ]:
 
 
-# Fit the model, and record history of training results
-# define the params
-num_epochs = 5
-batch_size = 200
+train = False
 
-history = model.fit(
-    xtrain,
-    ytrain,
-    validation_data=(xtest,ytest),
-    epochs=num_epochs,
-    batch_size=batch_size,
-    verbose=2,
-    callbacks=[tBoard]
-)
-pth = input('enter the full path for storing weights, or enter 0 to skip this')
-import os
-no_go=True
-if pth != '0':
-	while no_go:
-		try:
-			os.path.isdir(pth)
-		except:
-			pth = input('enter the full path for storing weights, or enter 0 to skip this')
-			if pth == '0':
-				no_go = False
-				break
-		model.save_weights('%s/tracker1_weights' % pth, overwrite=True)
-		no_go=False
+if train:
+
+    # Fit the model, and record history of training results
+    # define the params
+    num_epochs = 5
+    batch_size = 200
+
+    history = model.fit(
+        xtrain,
+        ytrain,
+        validation_data=(xtest,ytest),
+        epochs=num_epochs,
+        batch_size=batch_size,
+        verbose=2,
+        callbacks=[tBoard]
+    )
+
+    try:
+        from MiscFunctions import MiscFunctions as mf
+        mf.plot_history(history)
+    except Exception as e:
+        print(e)
+
+    pth = input('enter the full path for storing weights, or enter 0 to skip this')
+    import os
+    no_go=True
+    if pth != '0':
+        while no_go:
+            try:
+                os.path.isdir(pth)
+            except:
+                pth = input('enter the full path for storing weights, or enter 0 to skip this')
+                if pth == '0':
+                    no_go = False
+                    break
+            model.save_weights('%s/tracker1_weights.h5' % pth, overwrite=True)
+            no_go=False
+else:
+    # load previously saved weights and try predicting
+    path = input("please enter a path of stored weights")
+    # if (".h5" not in path):
+    #     path+=".h5"
+    model.load_weights(path)
+
+    yPred_xtest10 = model.predict_classes(raw_images[:10])
+    yPred_all   = model.predict_classes(raw_images)
+    yPred_probabilities = model.predict(xtest)
 
 
-	
+    print(yPred_xtest10)
+    # print(yPred_probabilities)
+
+    print('done')
+
