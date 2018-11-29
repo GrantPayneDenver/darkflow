@@ -9,15 +9,29 @@ import copy
 #from utils.box import prob_compare2, box_intersection
 from ...utils.box import BoundBox
 
+
+from .tracker import Tracker
+
+# get our tracking module object
+global tracker
+tracker = Tracker()
+
 global frame
 frame = 0
 
 global out_dir
+global make_training_data
+make_training_data = True
 good_path = False
 while not good_path:
-	out_dir = input("Please enter a directory to store your output for bounding boxes")
+	out_dir = input("Please enter a directory to store your output for bounding boxes -- if not getting data and using the traker, enter [s\S] to skip ")
 	if os.path.isdir(out_dir):
 		good_path = True
+	elif out_dir == "S" or out_dir == "s":
+		good_path = True
+		# global skip_gen
+		make_training_data = False
+		print("skipping, using the tracker")
 	else:
 		print("Invalid path")
 
@@ -56,7 +70,6 @@ def postprocess(self, net_out, im, save = True):
 		imgcv = cv2.imread(im)
 	else: imgcv = im
 	h, w, _ = imgcv.shape
-	img_num = 0
 	resultsForJSON = []
 
 	# for saving largest bounding box of girl
@@ -76,11 +89,13 @@ def postprocess(self, net_out, im, save = True):
 			resultsForJSON.append({"label": mess, "confidence": float('%.2f' % confidence), "topleft": {"x": left, "y": top}, "bottomright": {"x": right, "y": bot}})
 			continue
 
+		# create bounding box
 		cv2.rectangle(imgcv,
 			(left, top), (right, bot),
 			colors[max_indx], thick)
-		cv2.putText(imgcv, mess, (left, top - 12),
-			0, 1e-3 * h, colors[max_indx],thick//3)
+		# don't need YOLO object classification
+		# cv2.putText(imgcv, mess, (left, top - 12),
+		# 	0, 1e-3 * h, colors[max_indx],thick//3)
 
 		# get copy of image for each box made
 		imgcv_copy = copy.copy(imgcv)
@@ -88,7 +103,12 @@ def postprocess(self, net_out, im, save = True):
 		imgcv_copy = blacken_image(imgcv_copy, h, w, left, top, right, bot)
 		imgcv_copy = resize_image(imgcv_copy)
 
-		img_num += 1
+		# we're not making data we're using the tracker
+		if not make_training_data:
+			pred = tracker.get_prediction(imgcv_copy)
+			if pred == 1:
+				# save a red circle over the predicted bounding box that yolo is using
+				cv2.circle(imgcv, (left, top), 20, (0, 0, 250), -1)
 
 		y = top
 		x = left
@@ -104,19 +124,17 @@ def postprocess(self, net_out, im, save = True):
 		# hold all imgcv_copy objects
 		lesser_images_for_frame.append(imgcv_copy)
 
-	# save all of these images
-	global out_dir
-	# save largest first
-	cv2.imwrite((out_dir + "\\%d%dz.jpg" % (frame, 1)), max_image)
-	# save others after in sequence
-	for idx, img in enumerate(lesser_images_for_frame):
-		if img is not max_image:
-			cv2.imwrite((out_dir + "\\%d%d.jpg" % (frame, idx+2)), img)
+	# global make_training_data
+	if make_training_data:
+		# save all of these images
+		global out_dir
+		# save largest first
+		cv2.imwrite((out_dir + "\\%d%dz.jpg" % (frame, 1)), max_image)
+		# save others after in sequence
+		for idx, img in enumerate(lesser_images_for_frame):
+			if img is not max_image:
+				cv2.imwrite((out_dir + "\\%d%d.jpg" % (frame, idx+2)), img)
 
-
-	# cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\bounding_boxes\\box_%d.jpg" % frame), max_box)
-		# roi = im[0:h, 0:w]
-		# cv2.imwrite(("C:\\Users\\grant\\Documents\\School\\Deep Learning\\Project\\DarkFlow\\darkflow\\video_results\\Screen_%d.jpg" % img_num), roi)
 	if not save: return imgcv
 
 	outfolder = os.path.join(self.FLAGS.imgdir, 'out')
