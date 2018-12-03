@@ -10,6 +10,10 @@
 *****      LINK TO CODE
 *****
 https://github.com/GrantPayneDenver/darkflow.git
+
+              WEIGHTS
+
+https://drive.google.com/file/d/1PsR-zlKV1CXZB-VzBSGwo1oZgVZQhDJe/view?usp=sharing
 *****
 *****
 
@@ -99,7 +103,7 @@ should come out as "video.mp4" in your working directory.
 
 3.3 Make sure you paste in the full path to these weights after you download them onto your PC
 
-3.4 There will be a prompt for a path to store the resulting images
+3.4 There will be a prompt for a path to store the resulting images with predictions annotated 
 
 
 
