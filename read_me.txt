@@ -17,6 +17,13 @@ https://drive.google.com/file/d/1PsR-zlKV1CXZB-VzBSGwo1oZgVZQhDJe/view?usp=shari
 *****
 *****
 
+
+SETTING UP YOLO:
+Must build cython code first, use this command in the dir with "flow" in it.
+python3 setup.py build_ext --inplace
+
+
+
 This code builds off of YOLO, but it really doesn't utilize YOLO for anything except
 for bounding boxes.
 
