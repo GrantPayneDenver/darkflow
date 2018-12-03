@@ -22,6 +22,8 @@ SETTING UP YOLO:
 Must build cython code first, use this command in the dir with "flow" in it.
 python3 setup.py build_ext --inplace
 
+	(more YOLO directions here: https://github.com/thtrieu/darkflow)
+
 
 
 This code builds off of YOLO, but it really doesn't utilize YOLO for anything except
