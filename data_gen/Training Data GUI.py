@@ -11,14 +11,35 @@ import wx.lib.agw.aui as aui
 import wx.lib.scrolledpanel as scrolled
 
 # where we save results
-RES_DIR = r'C:\Users\grant\Documents\School\Deep Learning\Project_v2\trunk\training_boxes\dynamic_training_boxes\swing_set_scene'
+RES_DIR = r'C:\Users\grant\Documents\School\Deep Learning\Project_v2\trunk\training_boxes\dynamic_training_boxes\woman_and_two_dogs_scene'
 
 # src dir, where we get the raw bounding boxes from
 # SRC_DIR = r'C:\Users\grant\Documents\School\Deep Learning\Project_v2\trunk\training_boxes\all_boxes'
-SRC_DIR = r'C:\Users\grant\Documents\School\Deep Learning\Project_v2\trunk\training_boxes\two_people'
+SRC_DIR = r'C:\Users\grant\Documents\School\Deep Learning\Project_v2\trunk\training_boxes\dogs_woman'
 
 # file_addendum \\ helps make different scenes' file names be unique, skating scene doesn't have one
-FILD_ADD = "ss" # for swing_set
+FILD_ADD = "_td" # for swing_set
+
+# just do this for every 3rd frame. Analyzing changes over each frame is too fine grained and not worth it.
+FRAME_INC = 1
+
+# frame and image index presets, RESET AS NEEDED
+IMG_IDX = 169
+FRAME = 104
+
+
+"""
+
+TODO
+
+For frame sets missing a match
+
+Get all images from frame set
+    concat the strings into a str
+        if "match" not in str
+            skip the frame set
+
+"""
 
 class Entity():
     # e = [image name, bitmap, [streams]]
@@ -55,7 +76,7 @@ class Entity():
                 base = cv2.addWeighted(src1, alpha, src2, beta, gamma)
             # base = cv2.addWeighted(base, alpha, new_stream, beta, gamma)
             # save base image, set of stacked cv2 images
-            cv2.imwrite(this_path+"\\%d_frame_%s_%s" % (set_num, self.image_name, FILD_ADD), base)
+            cv2.imwrite(this_path+"\\%d_frame_%s_%s" % (set_num, FILD_ADD, self.image_name), base)
             pngBmpBytes = base.tobytes()
             bmp = wx.Bitmap.FromBuffer(250, 250, pngBmpBytes)
             if self.bitmap:
@@ -123,11 +144,11 @@ class ImageProcFrame(wx.Frame):
         self.training_set_dir = r'C:\Users\grant\Documents\School\Deep Learning\Project_v2\trunk\training_boxes\dynamic_training_boxes\all_boxes_1'
         self.working_dir = RES_DIR
 
-        if not os.path.isdir(self.training_set_dir):
-            os.makedirs(self.training_set_dir)
+        # if not os.path.isdir(self.training_set_dir):
+        #     os.makedirs(self.training_set_dir)
 
-        if not os.path.isdir(self.working_dir):
-            os.makedirs(self.working_dir)
+        # if not os.path.isdir(self.working_dir):
+        #     os.makedirs(self.working_dir)
 
         # print(self.images)
         self.panels = []
@@ -135,12 +156,13 @@ class ImageProcFrame(wx.Frame):
         # iters thru the self.images files names
         # init at -1 for new sets
         # did 1 to 370 for skating_scene so far
-        self.image_idx = -1
+
+        self.image_idx = IMG_IDX
 
         # tracks what sets are made per match set found
         # init at 0 for new sets
         # got frames 0 to 315 now for skating_scene
-        self.set_frame = 0
+        self.set_frame = FRAME
 
         # tuple (imageFileName, image of StaticBitmap itself).
         # Holds all entities so far and their state so far.
@@ -171,14 +193,16 @@ class ImageProcFrame(wx.Frame):
         self.m_panel4.Bind(wx.EVT_SCROLLWIN_THUMBRELEASE, self.Scrolling)
         self.isNewButton.Bind(wx.EVT_BUTTON, self.NewEntity)
         self.classifyButton.Bind(wx.EVT_BUTTON, self.MatchFound)
+        self.Bind(wx.EVT_KEY_DOWN, self.KeyPressed)
         # self.dontKnowButton.Bind(wx.EVT_BUTTON, self.DontKnow)
         # self.undoNewEntryButton.Bind(wx.EVT_BUTTON, self.UndoIsNew)
 
+    def KeyPressed(self, event):
+        keycode = event.GetUnicodeKey()
+        print(keycode)
 
     def CreateGUI(self):
-        '''
-
-        '''
+        """"""
         self.BodySizer = wx.BoxSizer(wx.VERTICAL)
 
         # entities panel, scrollable
@@ -267,6 +291,8 @@ class ImageProcFrame(wx.Frame):
         print('+- to :: %d %s' % (self.image_idx, imageFile))
         print('Current Frame: %d' % self.set_frame)
         self.classifyTextCtrl.SetValue(".jpg")
+        self.classifyTextCtrl.SetFocus()
+        self.classifyTextCtrl.SetInsertionPoint(0)
         bmp.Destroy()
         self.m_panel4.Layout()
         self.m_panel4.Refresh()
@@ -275,12 +301,12 @@ class ImageProcFrame(wx.Frame):
 
     def PrevImage(self, event):
         """ """
-        self.image_idx -= 1
+        self.image_idx -= FRAME_INC
         self.MovingImage()
 
     def NextImage(self, event):
         """ Dynamically update the entities in the entity scroller """
-        self.image_idx += 1
+        self.image_idx += FRAME_INC
         self.MovingImage()
 
     def DontKnow(self, event):
